@@ -1,0 +1,14 @@
+.git
+.env
+.env.*
+.chrome_profile
+__pycache__
+tests
+debug_*.html
+site-*
+dist
+.test-deps
+
+*.log
+*.zip
+release_payload.json

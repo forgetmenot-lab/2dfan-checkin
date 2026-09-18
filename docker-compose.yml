@@ -1,0 +1,8 @@
+services:
+  2dfan-checkin:
+    build: .
+    image: 2dfan-checkin
+    env_file:
+      - .env
+    shm_size: 256m
+    restart: "no"

@@ -1,5 +1,7 @@
 FROM python:3.12-slim
 
+LABEL org.opencontainers.image.version="2.0"
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget gnupg2 ca-certificates xvfb \
     libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 \
@@ -15,7 +17,7 @@ WORKDIR /app
 
 RUN pip install --no-cache-dir nodriver==0.48.1 python-dotenv opencv-python-headless numpy
 
-COPY main.py api.py entrypoint.sh ./
-RUN chmod +x entrypoint.sh
+COPY main.py api.py results.py notify.py entrypoint.sh ./
+RUN sed -i 's/\r$//' entrypoint.sh && chmod +x entrypoint.sh
 
 ENTRYPOINT ["/app/entrypoint.sh"]

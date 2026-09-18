@@ -14,23 +14,4 @@ if p != src:
     open(f, 'w').write(p)
 "
 
-python3 -c "
-c = open('api.py').read()
-
-# --disable-gpu 추가
-c = c.replace(
-    'browser = await uc.start(user_data_dir=_CHROME_PROFILE)',
-    'browser = await uc.start(user_data_dir=_CHROME_PROFILE, browser_args=[\"--disable-gpu\", \"--disable-software-rasterizer\"])'
-)
-
-# Strategy 3 스킵 (hang 방지)
-c = c.replace(
-    'logger.info(\"[3/3] 移除验证码后提交...\")\n        r = await _submit_no_captcha(tab)\n        if r:\n            return r',
-    'logger.info(\"[3/3] skip\")'
-)
-
-open('api.py', 'w').write(c)
-print('패치 완료')
-"
-
-python main.py
+exec python main.py
