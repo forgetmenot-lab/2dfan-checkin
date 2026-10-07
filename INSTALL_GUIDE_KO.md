@@ -1,6 +1,9 @@
-# 2dfan Auto Check-in v2.0 — NAS 설치부터 자동 실행까지
+# 2dfan Auto Check-in v3.0 — NAS 설치부터 자동 실행까지
 
-이 글은 배포 게시글에 첨부된 **2dfan-auto-checkin-v2.0.zip**을 내려받아 설치하는 방법입니다. GitHub 방문이나 Git 설치는 필요하지 않습니다. 설명은 Synology DSM을 기준으로 하며, 다른 NAS는 Docker 명령을 참고하되 경로·관리 화면·예약 실행 방법을 해당 제품에 맞게 바꿔야 합니다.
+이 글은 배포 게시글에 첨부된 **2dfan-auto-checkin-v3.0.zip**을 내려받아 설치하는 방법입니다. GitHub 방문이나 Git 설치는 필요하지 않습니다. 설명은 Synology DSM을 기준으로 하며, 다른 NAS는 Docker 명령을 참고하되 경로·관리 화면·예약 실행 방법을 해당 제품에 맞게 바꿔야 합니다.
+
+
+**VPN이 필요한 환경이라면 [VPN 전용 설치·운영 가이드](vpn/README_KO.md)를 먼저 읽으세요.** 권장 폴더는 `/volume1/docker/2dfan-vpn`이며 일반 설치의 `run-scheduler.sh` 대신 `vpn/run-checkin.sh`를 예약합니다. DSM 전체 VPN은 DDNS 접속 경로에 영향을 줄 수 있어 출석 컨테이너만 VPN을 사용하도록 구성합니다.
 
 ## 1. 어떤 프로그램인가요?
 
@@ -38,7 +41,7 @@ Docker 이미지와 빌드 캐시를 저장할 여유 공간도 확보하세요.
 
 ## 4. ZIP을 내려받아 NAS에 복사
 
-1. 이 게시글에 첨부된 `2dfan-auto-checkin-v2.0.zip`을 PC에 내려받습니다.
+1. 이 게시글에 첨부된 `2dfan-auto-checkin-v3.0.zip`을 PC에 내려받습니다.
 2. 압축을 풉니다. 안에는 `2dfan-nas` 폴더가 있습니다.
 3. DSM의 **File Station**을 엽니다.
 4. `docker` 공유 폴더 안에 `2dfan-nas` 폴더를 만듭니다. `docker` 공유 폴더가 없다면 DSM의 공유 폴더 설정에서 먼저 생성합니다.
@@ -230,7 +233,7 @@ tail -f /volume1/docker/2dfan-nas/scheduler.log
 
 모든 계정 처리가 끝나면 Discord 채널에 한 번에 결과가 도착합니다. 다음을 확인합니다.
 
-- 로그에 `2dfan-checkin v2.0`이 표시되는지
+- 로그에 `2dfan-checkin v3.0`이 표시되는지
 - 숫자 ID와 사이트 계정명이 같이 표시되는지
 - 성공 / 이미 완료 / 실패가 올바른지
 - 성공한 계정의 보유 포인트가 출석 후 잔액인지
@@ -284,7 +287,7 @@ Synology 작업 스케줄러의 명령 입력 위치는 공식 안내도 참고�
 | ID와 로그인 계정 불일치 | 쿠키와 숫자 ID를 같은 계정의 값으로 맞춤 |
 | 슬라이더 인증으로 실패 | 1회 자동 재시도 후에도 실패하면 사이트에서 수동 인증/출석. 무제한 재시도하지 않음 |
 | Discord 알림 없음 | 모든 계정 처리 완료 여부, 웹훅 URL, 대상 채널, 삭제된 웹훅인지 확인 |
-| 숫자만 보이거나 이름 조회 불가 | 최신 main.py와 results.py 포함 여부, v2.0 로그, 프로필 조회 로그 확인 |
+| 숫자만 보이거나 이름 조회 불가 | 최신 main.py와 results.py 포함 여부, v3.0 로그, 프로필 조회 로그 확인 |
 | 모듈이 없다는 오류 | 일부 파일만 복사했는지 확인하고 전체 파일 교체 후 재빌드 |
 | exec format error | ARM 등 지원하지 않는 CPU인지 확인 |
 | 종료 코드 1 | 일부 계정 또는 알림 전송이 실패했을 수 있음. 개별 결과 확인 |

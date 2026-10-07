@@ -1,0 +1,35 @@
+services:
+  vpn:
+    image: qmcgaw/gluetun:v3.41.3
+    container_name: 2dfan-vpn
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    env_file:
+      - ./private/vpn.env
+    environment:
+      VPN_SERVICE_PROVIDER: custom
+      VPN_TYPE: openvpn
+      OPENVPN_CUSTOM_CONFIG: /gluetun/custom.conf
+      FIREWALL: "on"
+      TZ: Asia/Seoul
+    volumes:
+      - ./private/custom.conf:/gluetun/custom.conf:ro
+      - ./state:/gluetun
+    restart: unless-stopped
+
+  probe:
+    profiles: [test]
+    build: ..
+    image: 2dfan-checkin
+    network_mode: service:vpn
+    depends_on:
+      vpn:
+        condition: service_healthy
+    environment:
+      CHECKIN_PROXY: ""
+      PYTHONUNBUFFERED: "1"
+    shm_size: 256m
+    command: [python, diagnose.py]
+    restart: "no"

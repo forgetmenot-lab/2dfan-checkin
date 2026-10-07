@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 
 from dotenv import load_dotenv
 
-from api import checkin
+from api import checkin, browser_options
 from results import CheckinResult, format_result
 from notify import send_discord
 
@@ -80,13 +80,16 @@ def _build_message(results: list[tuple[Account, CheckinResult]]) -> list[str]:
 
 
 async def main():
-    logger.info("2dfan-checkin v2.0: 숫자 ID + 사이트 계정명 표시")
+    logger.info("2dfan-checkin v3.0: NAS VPN 네트워크 및 브라우저 프록시 지원")
     load_dotenv()
     try:
+        browser_options()
         accounts = load_accounts()
     except ValueError as exc:
         logger.error("%s", exc)
         return 1
+    logger.info("브라우저 접속 경로: %s", "명시적 프록시" if os.environ.get("CHECKIN_PROXY", "").strip()
+                else "기본 네트워크 (VPN 사용 여부는 실행 환경에서 확인 필요)")
     logger.info("共 %d 个账号待签到", len(accounts))
     results: list[tuple[Account, CheckinResult]] = []
     for i, acc in enumerate(accounts, 1):

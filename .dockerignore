@@ -12,3 +12,4 @@ dist
 *.log
 *.zip
 release_payload.json
+vpn

@@ -7,9 +7,12 @@ import zipfile
 ROOT = Path(__file__).resolve().parent
 FILES = (
     "VERSION", "LICENSE", "README.md", "INSTALL_GUIDE_KO.md", "CHANGELOG.md",
-    "RELEASE_NOTES.md", "Dockerfile", ".dockerignore", ".env.example",
+    "RELEASE_NOTES.md", "NETWORK_GUIDE_KO.md", "PROJECT.md", "STATUS.md", "HANDOFF.md",
+    "Dockerfile", ".dockerignore", ".env.example",
     "docker-compose.yml", "main.py", "api.py", "results.py", "notify.py",
-    "entrypoint.sh", "run-nas.sh", "run-scheduler.sh",
+    "entrypoint.sh", "run-nas.sh", "run-scheduler.sh", "diagnose.py",
+    "vpn/compose.yml", "vpn/vpn.env.example", "vpn/run-checkin.sh",
+    "vpn/prepare_config.py", "vpn/README_KO.md",
 )
 
 

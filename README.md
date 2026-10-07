@@ -1,4 +1,4 @@
-# 2dfan Auto Check-in v2.0
+# 2dfan Auto Check-in v3.0
 
 NAS Docker에서 2dfan 출석을 처리하고 Discord로 **숫자 ID + 계정명 + 출석 결과 + 현재 보유 포인트**를 알리는 도구입니다.
 
@@ -10,6 +10,9 @@ NAS Docker에서 2dfan 출석을 처리하고 Discord로 **숫자 ID + 계정명
 - 출석 성공 후 서버에서 포인트를 다시 조회 (출석 보상의 평생 누적 합계가 아닌 현재 잔액)
 - 슬라이더로 전환되면 20초 후 페이지를 새로 열어 1회 재시도
 - 계정별 실패 분리, Discord 긴 알림 분할 및 전송 오류 처리
+- Gluetun OpenVPN 게이트웨이에 출석 컨테이너만 연결하여 NAS의 DDNS 경로 유지
+- VPN 정상 상태 확인 후 실행, 로그인 없는 공개 페이지 접속 진단
+- 선택적인 HTTP/HTTPS/SOCKS5 브라우저 프록시 지원
 
 슬라이더 인증 자체의 자동 해결은 지원하지 않습니다. 재시도 후에도 인증이 완료되지 않으면 수동 인증이 필요합니다. 사이트 변경이나 네트워크 조건에 따라 자동 출석이 실패할 수 있습니다.
 
@@ -26,7 +29,9 @@ NAS Docker에서 2dfan 출석을 처리하고 Discord로 **숫자 ID + 계정명
 
 처음 설치한다면 **[처음부터 따라 하는 설치 가이드](INSTALL_GUIDE_KO.md)**를 읽으세요. GitHub 사용법이나 Git 설치 없이 배포 ZIP만으로 설치할 수 있습니다.
 
-1. `2dfan-auto-checkin-v2.0.zip`을 풀어 내용물을 NAS `/volume1/docker/2dfan-nas/`에 넣습니다.
+VPN이 필요한 접속 환경에서는 **[VPN 전용 설치·운영 가이드](vpn/README_KO.md)**를 먼저 따르세요. 권장 운영 폴더는 `/volume1/docker/2dfan-vpn`이며 아래의 기본 설치와 실행 명령은 VPN을 사용하지 않는 경우입니다. 다른 프록시나 기존 게이트웨이를 사용한다면 [NAS VPN·프록시 설정](NETWORK_GUIDE_KO.md)을 참고하세요. PC의 카스퍼스키 VPN이나 오페라 내장 VPN은 NAS에 자동 적용되지 않습니다.
+
+1. `2dfan-auto-checkin-v3.0.zip`을 풀어 내용물을 NAS `/volume1/docker/2dfan-nas/`에 넣습니다.
 2. `.env.example`을 `.env`로 복사하고 본인의 계정 쿠키와 Discord 웹훅을 입력합니다.
 3. NAS SSH에서 빌드합니다.
 
@@ -61,7 +66,7 @@ DISCORD_WEBHOOK=https://discord.com/api/webhooks/WEBHOOK_ID/WEBHOOK_TOKEN
 - `user_id`: 프로필 주소 `/users/숫자`의 숫자. 로그인 이름과 다릅니다.
 - `session`: 로그인한 브라우저의 `_project_hgc_session` 쿠키 값. `%2F` 등을 디코딩하지 않습니다.
 - 계정명은 사이트에서 자동 조회합니다. 선택적인 `name` 설정은 조회 실패 시 표시할 이름입니다.
-- 웹훅은 URL 그대로 입력합니다. Markdown 링크나 바깥쪽 작은따옴표를 넣지 않습니다.
+- 출석용 `.env`는 Docker가 직접 읽습니다. `KEY=VALUE`로 쓰고 `=` 앞뒤 공백이나 값 전체를 감싼 따옴표를 넣지 않습니다. 파일 이름은 `env`가 아닌 `.env`입니다. 웹훅은 URL 그대로 입력합니다.
 - 기존 `DISCORD_WEBHOOK` 및 별칭 `DISCORD_WEBHOOK_URL`을 지원합니다. 알림이 필요 없으면 비워 둡니다.
 
 ## 알림 예시
@@ -82,13 +87,13 @@ DISCORD_WEBHOOK=https://discord.com/api/webhooks/WEBHOOK_ID/WEBHOOK_TOKEN
 
 ## 기존 설치 업데이트
 
-`.env`를 보존하고 배포 파일을 교체하세요. 첫 구버전에서 업데이트할 때는 반드시 이미지를 재빌드합니다. 이 저장소의 사전 테스트 버전 v3/v4/v5는 정식 버전이 아니며 이번 정식 버전은 **v2.0**입니다.
+`.env`를 보존하고 배포 파일을 교체한 후 이미지를 재빌드하세요. 이 저장소의 사전 테스트 버전 v3/v4/v5는 정식 버전이 아니며 이번 정식 버전은 **v3.0**입니다.
 
 `run-scheduler.sh`는 `api.py`, `main.py`, `results.py`를 함께 마운트합니다. 예전처럼 api.py만 연결하면 계정명 등 알림 코드가 구버전으로 남을 수 있습니다. 업데이트 후 같은 빌드·테스트 절차를 실행하면 코드와 의존성을 일치시킬 수 있습니다.
 
 ## 검증
 
-사용자 NAS 로그에서 실제 출석 성공·완료 후 포인트 증가·스케줄러 실행을 확인했고, 사용자로부터 계정명 알림의 정상 동작을 확인받았습니다. 모든 환경에서 성공을 보장하지 않습니다. 로컬 Docker 엔진이 실행되지 않아 이 환경에서 새 이미지 빌드는 검증하지 못했습니다.
+기존 설치에서는 사용자 NAS 로그로 출석 성공·포인트 증가·예약 실행을 확인했습니다. 이번 VPN 구성은 Synology DS423+ / DSM 7.3.2-86009 Update 4에서 이미지 빌드, VPN 연결, 공개 페이지 접속, 로그인 계정 확인, 이미 완료된 출석과 잔액 조회 및 DDNS 유지가 확인됐습니다. VPN 경유 자동 출석 제출은 슬라이더 인증으로 중단되어 아직 성공을 확인하지 못했습니다. 터널 단절 시 통신 차단도 실제 환경에서는 아직 검증하지 않았습니다. 자세한 범위는 [STATUS.md](STATUS.md)를 참고하세요.
 
 ```sh
 python -m pip install nodriver==0.48.1 python-dotenv

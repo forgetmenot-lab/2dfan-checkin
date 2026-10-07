@@ -13,7 +13,7 @@ if [ -z "$DOCKER" ]; then
   echo "오류: docker 실행 파일을 찾지 못했습니다."
   exit 1
 fi
-"$DOCKER" run --rm --shm-size=256m \
+"$DOCKER" run --rm --shm-size=256m --network "${CHECKIN_DOCKER_NETWORK:-bridge}" \
   -v /volume1/docker/2dfan-nas/api.py:/app/api.py:ro \
   -v /volume1/docker/2dfan-nas/main.py:/app/main.py:ro \
   -v /volume1/docker/2dfan-nas/results.py:/app/results.py:ro \

@@ -12,3 +12,5 @@ dist/
 *.log
 *.zip
 release_payload.json
+vpn/private/
+vpn/state/

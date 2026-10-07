@@ -3,7 +3,7 @@
 流程：启动 Chrome → 设置 cookie → 通过 Cloudflare → 打开签到弹窗
 → 通过 Turnstile → 提交签到 → 读取签到状态。
 
-2DFan v2.0 (2026) 将签到页从 ``/users/:id/recheckin`` 移到了
+2DFan v3.0 (2026) 将签到页从 ``/users/:id/recheckin`` 移到了
 ``/checkin``，并用 Vue 弹窗替代了旧的 ``#do_checkin`` 表单。
 """
 
@@ -22,6 +22,68 @@ logger = logging.getLogger(__name__)
 _CF_TITLES = ["Just a moment", "请稍候"]
 _CHROME_PROFILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".chrome_profile")
 _CHECKIN_URL = "https://2dfan.com/checkin"
+
+
+def browser_options() -> dict:
+    """Use a configured proxy or the container's existing network route."""
+    args = ["--disable-gpu", "--disable-software-rasterizer"]
+    proxy = os.environ.get("CHECKIN_PROXY", "").strip()
+    if proxy:
+        message = ("CHECKIN_PROXY는 인증 정보 없는 http://호스트:포트, "
+                   "https://호스트:포트 또는 socks5://호스트:포트여야 합니다")
+        try:
+            parsed = urlparse(proxy)
+            valid = (parsed.scheme in {"http", "https", "socks5"}
+                     and parsed.hostname and parsed.port
+                     and parsed.username is None and parsed.password is None
+                     and parsed.path in {"", "/"} and not parsed.query
+                     and not parsed.fragment
+                     and not any(c.isspace() for c in proxy)
+                     and not any(c in proxy for c in ";,\\"))
+        except ValueError:
+            valid = False
+        if not valid:
+            # Do not include user input: it may contain proxy credentials.
+            raise ValueError(message)
+        endpoint = f"{parsed.scheme}://{parsed.netloc}"
+        args.append(f"--proxy-server={endpoint}")
+        if parsed.scheme == "socks5":
+            # Chrome resolves destination names at the SOCKS5 proxy. Prevent
+            # other local browser DNS lookups; allow resolving the proxy host.
+            args.append(f"--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE {parsed.hostname}")
+    return {"browser_args": args}
+
+
+_PAGE_FAILURE_JS = """
+(() => {
+    const title = document.title || '';
+    const text = document.body?.innerText || '';
+    const network = text.match(/\\bERR_(?:PROXY_CONNECTION_FAILED|TUNNEL_CONNECTION_FAILED|SOCKS_CONNECTION_FAILED|NAME_NOT_RESOLVED|CONNECTION_TIMED_OUT|CONNECTION_REFUSED|CONNECTION_RESET|INTERNET_DISCONNECTED)\\b/);
+    return JSON.stringify({
+        locked: /账户因违规已被锁定|帳戶因違規已被鎖定/.test(text),
+        blocked: /cloudflare/i.test(text) && /sorry, you have been blocked|error (?:code: )?1020|access denied/i.test(title + ' ' + text),
+        network: network ? network[0] : null
+    });
+})()
+"""
+
+
+async def _check_page_failure(tab):
+    """Return diagnostic flags only; do not log page text or cookies."""
+    raw = await tab.evaluate(_PAGE_FAILURE_JS)
+    try:
+        flags = json.loads(raw)
+    except (ValueError, TypeError):
+        return
+    if not isinstance(flags, dict):
+        return
+    if flags.get("locked"):
+        raise ValueError("사이트에서 계정이 잠겼습니다: 관리자 해제 후 다시 실행하세요")
+    if flags.get("blocked"):
+        raise RuntimeError("Cloudflare가 접속을 차단했습니다: 접속 경로 또는 사이트 관리자에게 확인하세요")
+    code = flags.get("network")
+    if isinstance(code, str) and re.fullmatch(r"ERR_[A-Z_]+", code):
+        raise RuntimeError(f"브라우저 연결 실패 ({code}): NAS의 VPN·프록시 연결을 확인하세요")
 
 # 获取按钮状态的 JS
 _BTN_STATE_JS = """
@@ -271,6 +333,7 @@ async def _submit_normal(tab) -> None:
 
 
 async def _ensure_page(tab):
+    await _check_page_failure(tab)
     if await _on_cf_challenge(tab):
         try:
             await tab.verify_cf()
@@ -278,6 +341,7 @@ async def _ensure_page(tab):
             pass
         if not await _pass_cf_challenge(tab):
             raise RuntimeError("Cloudflare 검증 시간 초과")
+    await _check_page_failure(tab)
     path = urlparse(await tab.evaluate("location.href") or "").path
     if path.startswith(("/login", "/signin")):
         raise ValueError("로그인 세션 만료: _project_hgc_session을 갱신하세요")
@@ -376,7 +440,7 @@ async def checkin(user_id: str, session_cookie: str) -> CheckinResult:
     if not re.fullmatch(r"[0-9]+", user_id):
         raise ValueError("user_id는 숫자여야 합니다")
     profile = os.path.join(_CHROME_PROFILE, user_id)
-    browser = await uc.start(user_data_dir=profile, browser_args=["--disable-gpu", "--disable-software-rasterizer"])
+    browser = await uc.start(user_data_dir=profile, **browser_options())
     verified = False
     account_name = ""
     try:

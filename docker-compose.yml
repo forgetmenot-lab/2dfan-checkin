@@ -2,6 +2,7 @@ services:
   2dfan-checkin:
     build: .
     image: 2dfan-checkin
+    network_mode: "${CHECKIN_DOCKER_NETWORK:-bridge}"
     env_file:
       - .env
     shm_size: 256m

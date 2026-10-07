@@ -14,4 +14,7 @@ if p != src:
     open(f, 'w').write(p)
 "
 
+if [ "$#" -gt 0 ]; then
+    exec "$@"
+fi
 exec python main.py
